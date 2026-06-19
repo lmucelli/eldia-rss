@@ -32,20 +32,28 @@ else:
 
 items = []
 
+items = []
+
 for a in soup.find_all("a", href=True):
     href = a["href"]
     title = a.get_text(strip=True)
 
+    # limpieza básica
     if not title:
         continue
 
-    if len(title) < 20:
+    # filtra basura tipo menú o botones
+    if len(title) < 25:
         continue
 
     if href.startswith("/"):
         href = "https://www.eldia.com" + href
 
     if "eldia.com" not in href:
+        continue
+
+    # elimina cosas típicas que no son noticias reales
+    if any(x in title.lower() for x in ["leer más", "ver más", "ver nota"]):
         continue
 
     items.append((title, href))
