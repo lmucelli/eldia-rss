@@ -131,12 +131,9 @@ for title, link, date, uid in items_with_date:
 # -------------------------
 # SOLO GENERA SI HAY CAMBIOS
 # -------------------------
-if new_items > 0:
-    fg.rss_file("feed.xml")
+fg.rss_file("feed.xml")
 
-    with open(SEEN_FILE, "w") as f:
-        json.dump(list(seen), f)
+with open(SEEN_FILE, "w") as f:
+    json.dump(list(seen), f)
 
-    print(f"RSS actualizado ({new_items} nuevas noticias)")
-else:
-    print("Sin cambios: no se actualiza el feed")
+print(f"RSS actualizado. Nuevas: {new_items}")
