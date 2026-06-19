@@ -4,7 +4,7 @@ import requests
 from datetime import datetime, timezone
 import json
 import os
-import time
+import hashlib
 
 URL = "https://www.eldia.com/ultimas-noticias"
 
@@ -12,28 +12,46 @@ headers = {
     "User-Agent": "Mozilla/5.0"
 }
 
+# -------------------------
+# Cargar página principal
+# -------------------------
 response = requests.get(URL, headers=headers, timeout=30)
 response.raise_for_status()
 
 soup = BeautifulSoup(response.text, "html.parser")
 
+# -------------------------
+# Feed RSS
+# -------------------------
 fg = FeedGenerator()
 fg.title("El Día - Últimas Noticias")
 fg.link(href=URL)
 fg.description("RSS generado automáticamente desde El Día")
 fg.language("es")
 
+# -------------------------
+# Memoria de duplicados
+# -------------------------
 SEEN_FILE = "seen.json"
 
 if os.path.exists(SEEN_FILE):
     with open(SEEN_FILE, "r") as f:
-        seen_links = set(json.load(f))
+        seen = set(json.load(f))
 else:
-    seen_links = set()
+    seen = set()
 
+# -------------------------
+# Hash para deduplicación pro
+# -------------------------
+def make_id(title, link):
+    return hashlib.md5((title + link).encode()).hexdigest()
+
+# -------------------------
+# Extractor de fecha pro
+# -------------------------
 def extract_date(article_url):
     try:
-        r = requests.get(article_url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        r = requests.get(article_url, timeout=10, headers=headers)
         soup2 = BeautifulSoup(r.text, "html.parser")
 
         meta = soup2.find("meta", {"property": "article:published_time"})
@@ -49,28 +67,18 @@ def extract_date(article_url):
 
     return datetime.now(timezone.utc)
 
+# -------------------------
+# SCRAPING LIMPIO
+# -------------------------
 items = []
 
 for a in soup.find_all("a", href=True):
     href = a["href"]
     title = a.get_text(strip=True)
 
-    # limpieza básica
-    if not title:
-        continue
-items = []
-
-items = []
-
-for a in soup.find_all("a", href=True):
-    href = a["href"]
-    title = a.get_text(strip=True)
-
-    # limpieza básica
     if not title:
         continue
 
-    # filtra basura tipo menú o botones
     if len(title) < 25:
         continue
 
@@ -80,27 +88,49 @@ for a in soup.find_all("a", href=True):
     if "eldia.com" not in href:
         continue
 
-    # elimina cosas típicas que no son noticias reales
+    # limpieza de ruido
     if any(x in title.lower() for x in ["leer más", "ver más", "ver nota"]):
         continue
 
     items.append((title, href))
 
+# -------------------------
+# Agregar fecha + ID
+# -------------------------
+items_with_date = []
+
 for title, link in items:
-    if link in seen_links:
+    date = extract_date(link)
+    uid = make_id(title, link)
+    items_with_date.append((title, link, date, uid))
+
+# -------------------------
+# ORDEN POR FECHA (PRO)
+# -------------------------
+items_with_date.sort(key=lambda x: x[2], reverse=True)
+
+# -------------------------
+# RSS + deduplicación PRO
+# -------------------------
+for title, link, date, uid in items_with_date:
+
+    if uid in seen:
         continue
 
-    seen_links.add(link)
+    seen.add(uid)
 
     fe = fg.add_entry()
     fe.title(title)
     fe.link(href=link)
     fe.description(title)
-    fe.pubDate(extract_date(link))
+    fe.pubDate(date)
 
+# -------------------------
+# GUARDAR
+# -------------------------
 fg.rss_file("feed.xml")
 
 with open(SEEN_FILE, "w") as f:
-    json.dump(list(seen_links), f)
-    
-print("RSS generado correctamente")
+    json.dump(list(seen), f)
+
+print("RSS generado correctamente (modo PRO)")
