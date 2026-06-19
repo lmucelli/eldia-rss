@@ -4,7 +4,6 @@ import requests
 from datetime import datetime, timezone
 import json
 import os
-import hashlib
 
 URL = "https://www.eldia.com/ultimas-noticias"
 
@@ -13,7 +12,7 @@ headers = {
 }
 
 # -------------------------
-# DESCARGA DE LA WEB
+# DESCARGA PRINCIPAL
 # -------------------------
 response = requests.get(URL, headers=headers, timeout=30)
 response.raise_for_status()
@@ -34,25 +33,17 @@ fg.language("es")
 # -------------------------
 SEEN_FILE = "seen.json"
 
+def normalize_link(link):
+    return link.split("?")[0].rstrip("/")
+
 if os.path.exists(SEEN_FILE):
     with open(SEEN_FILE, "r") as f:
-        seen = set(json.load(f))
+        seen = set(normalize_link(x) for x in json.load(f))
 else:
     seen = set()
 
 # -------------------------
-# ID ÚNICO (PRO)
-# -------------------------
-def normalize_link(link):
-    # elimina parámetros tipo ?utm, ?amp, etc
-    return link.split("?")[0].rstrip("/")
-
-def make_id(title, link):
-    clean_link = normalize_link(link)
-    return hashlib.md5(clean_link.encode()).hexdigest()
-
-# -------------------------
-# EXTRACTOR DE FECHA
+# FECHA DEL ARTÍCULO
 # -------------------------
 def extract_date(article_url):
     try:
@@ -99,32 +90,30 @@ for a in soup.find_all("a", href=True):
     items.append((title, href))
 
 # -------------------------
-# CON FECHA + ID
+# AGREGAR FECHA
 # -------------------------
 items_with_date = []
 
 for title, link in items:
     date = extract_date(link)
-    uid = make_id(title, link)
-    items_with_date.append((title, link, date, uid))
+    items_with_date.append((title, link, date))
 
-# -------------------------
-# ORDEN POR FECHA (NUEVO → VIEJO)
-# -------------------------
+# ordenar por fecha (más nuevo primero)
 items_with_date.sort(key=lambda x: x[2], reverse=True)
 
 # -------------------------
-# ACTUALIZACIÓN INTELIGENTE
-# (NO genera nada si no hay novedades)
+# RSS + DEDUPLICACIÓN REAL
 # -------------------------
 new_items = 0
 
-for title, link, date, uid in items_with_date:
+for title, link, date in items_with_date:
 
-    if uid in seen:
+    clean_link = normalize_link(link)
+
+    if clean_link in seen:
         continue
 
-    seen.add(uid)
+    seen.add(clean_link)
     new_items += 1
 
     fe = fg.add_entry()
@@ -134,7 +123,7 @@ for title, link, date, uid in items_with_date:
     fe.pubDate(date)
 
 # -------------------------
-# SOLO GENERA SI HAY CAMBIOS
+# GUARDAR SIEMPRE (IMPORTANTE)
 # -------------------------
 fg.rss_file("feed.xml")
 
