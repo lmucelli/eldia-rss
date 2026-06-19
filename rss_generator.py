@@ -13,7 +13,7 @@ headers = {
 }
 
 # -------------------------
-# Cargar página principal
+# DESCARGA DE LA WEB
 # -------------------------
 response = requests.get(URL, headers=headers, timeout=30)
 response.raise_for_status()
@@ -21,7 +21,7 @@ response.raise_for_status()
 soup = BeautifulSoup(response.text, "html.parser")
 
 # -------------------------
-# Feed RSS
+# FEED RSS
 # -------------------------
 fg = FeedGenerator()
 fg.title("El Día - Últimas Noticias")
@@ -30,7 +30,7 @@ fg.description("RSS generado automáticamente desde El Día")
 fg.language("es")
 
 # -------------------------
-# Memoria de duplicados
+# MEMORIA DE DUPLICADOS
 # -------------------------
 SEEN_FILE = "seen.json"
 
@@ -41,13 +41,13 @@ else:
     seen = set()
 
 # -------------------------
-# Hash para deduplicación pro
+# ID ÚNICO (PRO)
 # -------------------------
 def make_id(title, link):
     return hashlib.md5((title + link).encode()).hexdigest()
 
 # -------------------------
-# Extractor de fecha pro
+# EXTRACTOR DE FECHA
 # -------------------------
 def extract_date(article_url):
     try:
@@ -68,7 +68,7 @@ def extract_date(article_url):
     return datetime.now(timezone.utc)
 
 # -------------------------
-# SCRAPING LIMPIO
+# SCRAPING
 # -------------------------
 items = []
 
@@ -88,14 +88,13 @@ for a in soup.find_all("a", href=True):
     if "eldia.com" not in href:
         continue
 
-    # limpieza de ruido
     if any(x in title.lower() for x in ["leer más", "ver más", "ver nota"]):
         continue
 
     items.append((title, href))
 
 # -------------------------
-# Agregar fecha + ID
+# CON FECHA + ID
 # -------------------------
 items_with_date = []
 
@@ -105,19 +104,23 @@ for title, link in items:
     items_with_date.append((title, link, date, uid))
 
 # -------------------------
-# ORDEN POR FECHA (PRO)
+# ORDEN POR FECHA (NUEVO → VIEJO)
 # -------------------------
 items_with_date.sort(key=lambda x: x[2], reverse=True)
 
 # -------------------------
-# RSS + deduplicación PRO
+# ACTUALIZACIÓN INTELIGENTE
+# (NO genera nada si no hay novedades)
 # -------------------------
+new_items = 0
+
 for title, link, date, uid in items_with_date:
 
     if uid in seen:
         continue
 
     seen.add(uid)
+    new_items += 1
 
     fe = fg.add_entry()
     fe.title(title)
@@ -126,11 +129,14 @@ for title, link, date, uid in items_with_date:
     fe.pubDate(date)
 
 # -------------------------
-# GUARDAR
+# SOLO GENERA SI HAY CAMBIOS
 # -------------------------
-fg.rss_file("feed.xml")
+if new_items > 0:
+    fg.rss_file("feed.xml")
 
-with open(SEEN_FILE, "w") as f:
-    json.dump(list(seen), f)
+    with open(SEEN_FILE, "w") as f:
+        json.dump(list(seen), f)
 
-print("RSS generado correctamente (modo PRO)")
+    print(f"RSS actualizado ({new_items} nuevas noticias)")
+else:
+    print("Sin cambios: no se actualiza el feed")
