@@ -90,7 +90,7 @@ for a in soup.find_all("a", href=True):
 
     # filtro nuevo (artículos reales)
     if "www.eldia.com" not in href:
-    continue
+        continue
 
 if "/ultimas-noticias" in href:
     continue
