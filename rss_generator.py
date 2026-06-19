@@ -31,6 +31,33 @@ if os.path.exists(SEEN_FILE):
 else:
     seen_links = set()
 
+def extract_date(article_url):
+    try:
+        r = requests.get(article_url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        soup2 = BeautifulSoup(r.text, "html.parser")
+
+        meta = soup2.find("meta", {"property": "article:published_time"})
+        if meta and meta.get("content"):
+            return datetime.fromisoformat(meta["content"].replace("Z", "+00:00"))
+
+        time_tag = soup2.find("time")
+        if time_tag and time_tag.get("datetime"):
+            return datetime.fromisoformat(time_tag["datetime"].replace("Z", "+00:00"))
+
+    except:
+        pass
+
+    return datetime.now(timezone.utc)
+
+items = []
+
+for a in soup.find_all("a", href=True):
+    href = a["href"]
+    title = a.get_text(strip=True)
+
+    # limpieza básica
+    if not title:
+        continue
 items = []
 
 items = []
@@ -69,7 +96,7 @@ for title, link in items:
     fe.title(title)
     fe.link(href=link)
     fe.description(title)
-    fe.pubDate(datetime.now(timezone.utc))
+    fe.pubDate(extract_date(link))
 
 fg.rss_file("feed.xml")
 
