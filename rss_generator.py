@@ -22,6 +22,14 @@ fg.link(href=URL)
 fg.description("RSS generado automáticamente desde El Día")
 fg.language("es")
 
+SEEN_FILE = "seen.json"
+
+if os.path.exists(SEEN_FILE):
+    with open(SEEN_FILE, "r") as f:
+        seen_links = set(json.load(f))
+else:
+    seen_links = set()
+
 items = []
 
 for a in soup.find_all("a", href=True):
@@ -42,13 +50,11 @@ for a in soup.find_all("a", href=True):
 
     items.append((title, href))
 
-seen = set()
-
 for title, link in items:
-    if link in seen:
+    if link in seen_links:
         continue
 
-    seen.add(link)
+    seen_links.add(link)
 
     fe = fg.add_entry()
     fe.title(title)
