@@ -63,4 +63,8 @@ for title, link in items:
     fe.pubDate(datetime.now(timezone.utc))
 
 fg.rss_file("feed.xml")
+
+with open(SEEN_FILE, "w") as f:
+    json.dump(list(seen_links), f)
+    
 print("RSS generado correctamente")
