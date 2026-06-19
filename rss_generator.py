@@ -1,7 +1,7 @@
 from feedgen.feed import FeedGenerator
 from bs4 import BeautifulSoup
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 
 URL = "https://www.eldia.com/ultimas-noticias"
 
@@ -52,7 +52,7 @@ for title, link in items:
     fe.title(title)
     fe.link(href=link)
     fe.description(title)
-    fe.pubDate(datetime.utcnow())
+    fe.pubDate(datetime.now(timezone.utc))
 
 fg.rss_file("feed.xml")
 print("RSS generado correctamente")
