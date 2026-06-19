@@ -4,6 +4,7 @@ import requests
 from datetime import datetime, timezone
 import json
 import os
+import time
 
 URL = "https://www.eldia.com/ultimas-noticias"
 
