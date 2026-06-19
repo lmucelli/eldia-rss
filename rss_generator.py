@@ -12,7 +12,7 @@ headers = {
 }
 
 # -------------------------
-# DESCARGA PRINCIPAL
+# DESCARGA HTML
 # -------------------------
 response = requests.get(URL, headers=headers, timeout=30)
 response.raise_for_status()
@@ -29,7 +29,7 @@ fg.description("RSS generado automáticamente desde El Día")
 fg.language("es")
 
 # -------------------------
-# MEMORIA DE DUPLICADOS
+# MEMORIA (seen.json)
 # -------------------------
 SEEN_FILE = "seen.json"
 
@@ -43,7 +43,7 @@ else:
     seen = set()
 
 # -------------------------
-# FECHA DEL ARTÍCULO
+# FECHA (opcional)
 # -------------------------
 def extract_date(article_url):
     try:
@@ -84,19 +84,18 @@ for a in soup.find_all("a", href=True):
     if "eldia.com" not in href:
         continue
 
+    # filtro anti-menú / basura
     if any(x in title.lower() for x in ["leer más", "ver más", "ver nota"]):
         continue
 
-    if "/ultimas-noticias" not in href:
-    continue
+    # filtro nuevo (artículos reales)
+    if "/202" not in href:
+        continue
 
-if "/202" not in href:
-    continue
-
-items.append((title, href))
+    items.append((title, href))
 
 # -------------------------
-# AGREGAR FECHA
+# AGREGAR FECHAS
 # -------------------------
 items_with_date = []
 
@@ -104,11 +103,11 @@ for title, link in items:
     date = extract_date(link)
     items_with_date.append((title, link, date))
 
-# ordenar por fecha (más nuevo primero)
+# ordenar por fecha
 items_with_date.sort(key=lambda x: x[2], reverse=True)
 
 # -------------------------
-# RSS + DEDUPLICACIÓN REAL
+# GENERAR RSS + DEDUP
 # -------------------------
 new_items = 0
 
@@ -129,7 +128,7 @@ for title, link, date in items_with_date:
     fe.pubDate(date)
 
 # -------------------------
-# GUARDAR SIEMPRE (IMPORTANTE)
+# GUARDAR SALIDA
 # -------------------------
 fg.rss_file("feed.xml")
 
