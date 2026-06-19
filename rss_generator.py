@@ -43,8 +43,13 @@ else:
 # -------------------------
 # ID ÚNICO (PRO)
 # -------------------------
+def normalize_link(link):
+    # elimina parámetros tipo ?utm, ?amp, etc
+    return link.split("?")[0].rstrip("/")
+
 def make_id(title, link):
-    return hashlib.md5((title + link).encode()).hexdigest()
+    clean_link = normalize_link(link)
+    return hashlib.md5(clean_link.encode()).hexdigest()
 
 # -------------------------
 # EXTRACTOR DE FECHA
