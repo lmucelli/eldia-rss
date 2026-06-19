@@ -92,8 +92,8 @@ for a in soup.find_all("a", href=True):
     if "www.eldia.com" not in href:
         continue
 
-if "/ultimas-noticias" in href:
-    continue
+    if "/ultimas-noticias" in href:
+        continue
     
     items.append((title, href))
 
