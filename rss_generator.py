@@ -2,6 +2,8 @@ from feedgen.feed import FeedGenerator
 from bs4 import BeautifulSoup
 import requests
 from datetime import datetime, timezone
+import json
+import os
 
 URL = "https://www.eldia.com/ultimas-noticias"
 
