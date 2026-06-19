@@ -87,7 +87,13 @@ for a in soup.find_all("a", href=True):
     if any(x in title.lower() for x in ["leer más", "ver más", "ver nota"]):
         continue
 
-    items.append((title, href))
+    if "/ultimas-noticias" not in href:
+    continue
+
+if "/202" not in href:
+    continue
+
+items.append((title, href))
 
 # -------------------------
 # AGREGAR FECHA
